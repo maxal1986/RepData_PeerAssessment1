@@ -7,11 +7,13 @@ output:
 
 The data for this assignment (i.e. "activity.csv"" file) must be in the folder "RepData_PeerAssessment1".
 
-The following two libraries will be used during the process:
+The following libraries will be used during the process:
 
 ```{r, warning=FALSE, message=FALSE}
 library(dplyr) # For data manipulation
 library(ggplot2) # For data visualization
+library(gridExtra) # For data visualization 
+library(timeDate) # For manipulating dates
 ```
 
 ## Loading and preprocessing the data
@@ -29,22 +31,23 @@ So, let's create a vector with the classes for each variable
 data_types <- c("numeric", "Date", "numeric")
 ```
 
-Now, we are going to unzip the dataset and load it in our working space (please note that the following code unzips the file and deletes the file once it has been loaded in the WD):
+Now, we are going to unzip the dataset and load it as raw data in our working space:
 
 ```{r}
-data <- read.csv("activity.csv", colClasses = data_types)
+data_file <- unzip("RepData_PeerAssessment1/activity.zip")
+raw_data <- read.csv("activity.csv", colClasses = data_types)
 ```
 
-After loading the data in our WD, we can easily see that there are `r nrow(data)` observations in the dataset. But, is the dataset complete? Let's see a summary:
+Let's do some exploratory analysis. We can easily see that there are `r nrow(raw_data)` observations in the dataset. But, is the dataset complete? Let's see a summary:
 
 ```{r, echo=FALSE}
-summary(data)
+summary(raw_data)
 ```
 
-From the summary, we can see that `r nrow(data[is.na(data$steps),])` observations have a NA in the "steps variable. Hence, we need to end up with a dataset with `r nrow(data)-nrow(data[is.na(data$steps),])` observations, so let's filter the data.
+From the summary, we derive that `r nrow(raw_data[is.na(raw_data$steps),])` observations have a NA in the "steps" variable. Hence, we need to transform the raw data into a dataset with `r nrow(raw_data)-nrow(raw_data[is.na(raw_data$steps),])` observations, so let's create the clean dataset.
 
 ```{r}
-data <- data[!is.na(data$steps),]
+data <- raw_data[!is.na(raw_data$steps),]
 ```
 
 Now the clean dataset has `r nrow(data)` observations.
@@ -53,28 +56,158 @@ Now the clean dataset has `r nrow(data)` observations.
 We are going to group the dataset in order to report the total number of steps taken per day. Let's create a new variable:
 
 ```{r}
-sum_dates <- summarise(group_by(data, date), total_per_day = sum(steps))
+total_steps <- summarise(group_by(data, date), total = sum(steps))
 ```
 
 Let's plot this variable:
 
 ```{r, echo = FALSE, fig.height= 4, fig.width= 6, fig.align='center'}
-m <- ggplot(sum_dates, aes(x=date, y=total_per_day))
+m <- ggplot(total_steps, aes(x = date, y = total))
 
 m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
-        xlab("Date")+
-        ylab("Total # of steps")+
+        xlab("Date")+ ylab("Total # of steps")+
         ggtitle("Total # of steps per day")
-        
+```
 
+From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph. Since the values are so close the lines overlap when plotting over the chart.
+
+```{r}
+mean(total_steps$total)
+median(total_steps$total)
+```
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 10, fig.align='center'}
+p_mean <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
+        xlab("Date")+ ylab("Total # of steps")+
+        ggtitle("Total # of steps per day")+
+        geom_hline(y = mean(total_steps$total), size = 0.75, colour = "red")
+
+p_median <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
+        xlab("Date")+ ylab("Total # of steps")+
+        ggtitle("Total # of steps per day")+
+        geom_hline(y = median(total_steps$total), size = 0.75, colour = "green")
+
+grid.arrange(p_mean, p_median, ncol = 2)
+        
 ```
 
 ## What is the average daily activity pattern?
+Similarly as we did for the previous section, we are going to group the dataset in order to report the average number of steps taken per interval. Let's create a new variable:
 
+```{r}
+interval_steps <- summarise(group_by(data, interval), average = mean(steps))
+```
+
+Let's plot this variable:
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 6, fig.align='center'}
+m <- ggplot(interval_steps, aes(x = interval, y = average))
+
+m + geom_line(colour = "blue", size = 0.75, stat="identity")+
+        xlab("Interval")+ ylab("Average # of steps")+
+        ggtitle("Average daily # of steps per interval")   
+
+```
+
+The interval with the highest value would be the interval `r interval_steps[which(interval_steps$average == max(interval_steps$average)),1]` according to the following function (we plotted below in red):
+
+```{r, results = "hide"}
+interval_steps[which(interval_steps$average == max(interval_steps$average)),1]
+```
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 6, fig.align='center'}
+m <- ggplot(interval_steps, aes(x = interval, y = average))
+v <- interval_steps[which(interval_steps$average == max(interval_steps$average)),1]
+v <- as.numeric(v)
+
+m + geom_line(colour = "blue", size = 0.75, stat="identity")+
+        xlab("Interval")+ ylab("Average # of steps")+
+        ggtitle("Average daily # of steps per interval")+
+        geom_vline(xintercept = v, size = 0.75, colour = "red")
+
+```
 
 
 ## Imputing missing values
+From the analysis made for the first section, we saw that `r nrow(raw_data[is.na(raw_data$steps),])` observations in the raw data have a NA in the "steps"" variable which is the only variable with NA ocurrences. As per the exercise mandate, we need to decide on a strategy to overcome this so we don't end up with a biased dataset.
 
+In my case, I have decided to use the strategy of filling the gaps by using the average # of steps for an interval. Therefore, I'm going to create a different data set where I'm going to assign the average # of steps for an interval to those observations with a NA in the steps variable. This is pretty easy to make using the data that we generate for the previous section.
+
+```{r}
+fill_data <- raw_data
+
+for (i in 1:nrow(fill_data) ) {
+        if(is.na(fill_data$steps[i])){
+                fill_data$steps[i] = as.numeric(interval_steps[
+                        which(interval_steps$interval == fill_data$interval[i]),2])
+        }
+}
+
+```
+
+We must group the dataset in order to report the total number of steps taken per day. Let's create a new variable:
+
+```{r}
+total_steps_f <- summarise(group_by(fill_data, date), total = sum(steps))
+```
+
+Let's plot this variable:
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 6, fig.align='center'}
+m <- ggplot(total_steps_f, aes(x = date, y = total))
+
+m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
+        xlab("Date")+ ylab("Total # of steps")+
+        ggtitle("Total # of steps per day")
+```
+
+From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph like we did in section 2.
+
+```{r}
+mean(total_steps_f$total)
+median(total_steps_f$total)
+```
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 10, fig.align='center'}
+p_mean <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
+        xlab("Date")+ ylab("Total # of steps")+
+        ggtitle("Total # of steps per day")+
+        geom_hline(y = mean(total_steps_f$total), size = 0.75, colour = "red")
+
+p_median <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
+        xlab("Date")+ ylab("Total # of steps")+
+        ggtitle("Total # of steps per day")+
+        geom_hline(y = median(total_steps_f$total), size = 0.75, colour = "green")
+
+grid.arrange(p_mean, p_median, ncol = 2)
+```        
+
+From this experiment we can conclude that, although we did not affect the mean at all, the median was impacted in a way that the number is much closer to the mean than before. In fact, with the input of the missing data we have made the mean and the median equal.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+We need to create a new variable that indicates if the date is a "Weekday" or a "Weekend". Let's do it by using the `isWeekday()` function and attaching the result to the data set that we used before:
+
+```{r}
+fill_data$weekday <- factor(isWeekday(fill_data$date), labels = c("Weekday","Weekend"))
+```
+
+In order to report the average # of steps per interval and divided by weekday or weekend, we need to create a new variable that summarises the necessary data.
+
+```{r}
+interval_steps_w <- summarise(group_by(fill_data, interval, weekday), average = mean(steps))
+```
+
+Let's plot this variable:
+
+```{r, echo = FALSE, fig.height= 4, fig.width= 6, fig.align='center'}
+m <- ggplot(interval_steps_w, aes(x = interval, y = average))
+
+m + geom_line(colour = "blue", size = 0.75, stat="identity")+
+        xlab("Interval")+ ylab("Average # of steps")+
+        ggtitle("Average daily # of steps per interval")+
+        facet_wrap(~weekday, nrow = 2)+
+        theme(strip.background = element_rect(fill = "burlywood1"))
+
+```
+
