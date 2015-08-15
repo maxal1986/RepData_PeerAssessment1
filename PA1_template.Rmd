@@ -5,7 +5,7 @@ output:
     keep_md: true
 ---
 
-The data for this assignment (i.e. "activity.csv"" file) must be in the folder "RepData_PeerAssessment1".
+The original dataset for this assignment (i.e. "activity.zip"" file) must be in the folder "RepData_PeerAssessment1".
 
 The following libraries will be used during the process:
 
@@ -16,14 +16,12 @@ library(gridExtra) # For data visualization
 library(timeDate) # For manipulating dates
 ```
 
-## Loading and preprocessing the data
+## 1.- Loading and preprocessing the data
+Considering the original dataset, we should assign the following classes to each variable:
 
-
-Considering the dataset, we should assign the following classes to each variable:
-
-- **steps**: This will be a numerical class.
-- **date**: This will be a Date class.
-- **inteval**: This will be a numerical class.
+- **steps**: Numerical class.
+- **date**: Date class.
+- **inteval**: Numerical class.
 
 So, let's create a vector with the classes for each variable
 
@@ -31,29 +29,29 @@ So, let's create a vector with the classes for each variable
 data_types <- c("numeric", "Date", "numeric")
 ```
 
-Now, we are going to unzip the dataset and load it as raw data in our working space:
+Now, we are going to unzip the dataset and load it as a raw dataset in our working space:
 
 ```{r}
-data_file <- unzip("RepData_PeerAssessment1/activity.zip")
-raw_data <- read.csv("activity.csv", colClasses = data_types)
+data_file <- unzip("activity.zip")
+raw_data <- read.csv(data_file, colClasses = data_types)
 ```
 
-Let's do some exploratory analysis. We can easily see that there are `r nrow(raw_data)` observations in the dataset. But, is the dataset complete? Let's see a summary:
+Let's begin by doing some exploratory analysis. We can easily see that there are `r nrow(raw_data)` observations in the dataset. But, is the dataset complete? Let's see a summary of the variables:
 
 ```{r, echo=FALSE}
 summary(raw_data)
 ```
 
-From the summary, we derive that `r nrow(raw_data[is.na(raw_data$steps),])` observations have a NA in the "steps" variable. Hence, we need to transform the raw data into a dataset with `r nrow(raw_data)-nrow(raw_data[is.na(raw_data$steps),])` observations, so let's create the clean dataset.
+From this summary, we can derive that `r nrow(raw_data[is.na(raw_data$steps),])` observations have a NA in the "steps" variable. Hence, we need to transform the raw dataset into a clean dataset with `r nrow(raw_data)-nrow(raw_data[is.na(raw_data$steps),])` observations. Let's create this clean dataset.
 
 ```{r}
 data <- raw_data[!is.na(raw_data$steps),]
 ```
 
-Now the clean dataset has `r nrow(data)` observations.
+Now the clean dataset has `r nrow(data)` observations as we mentioned before.
 
-## What is mean total number of steps taken per day?
-We are going to group the dataset in order to report the total number of steps taken per day. Let's create a new variable:
+## 2.- What is mean total number of steps taken per day?
+We need to regroup the dataset in order to easily report the total number of steps taken per day. Let's create a new variable that will ease this process:
 
 ```{r}
 total_steps <- summarise(group_by(data, date), total = sum(steps))
@@ -66,10 +64,12 @@ m <- ggplot(total_steps, aes(x = date, y = total))
 
 m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
-        ggtitle("Total # of steps per day")
+        ggtitle("Total # of steps per day")+
+        theme(panel.background = element_rect(fill = 'white'))+
+        theme(axis.line = element_line(colour = 'gray'))
 ```
 
-From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph. Since the values are so close the lines overlap when plotting over the chart.
+From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph. Since the values are so close the lines overlap.
 
 ```{r}
 mean(total_steps$total)
@@ -80,19 +80,21 @@ median(total_steps$total)
 p_mean <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
         ggtitle("Total # of steps per day")+
-        geom_hline(y = mean(total_steps$total), size = 0.75, colour = "red")
+        geom_hline(y = mean(total_steps$total), size = 0.75, colour = "red")+
+        theme(panel.background = element_rect(fill = 'white'))
 
 p_median <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
         ggtitle("Total # of steps per day")+
-        geom_hline(y = median(total_steps$total), size = 0.75, colour = "green")
+        geom_hline(y = median(total_steps$total), size = 0.75, colour = "green")+
+        theme(panel.background = element_rect(fill = 'white'))
 
 grid.arrange(p_mean, p_median, ncol = 2)
         
 ```
 
-## What is the average daily activity pattern?
-Similarly as we did for the previous section, we are going to group the dataset in order to report the average number of steps taken per interval. Let's create a new variable:
+## 3.- What is the average daily activity pattern?
+Similarly as we did for section 2, we need to regroup the dataset in order to report the average number of steps taken per interval. Let's create a new variable:
 
 ```{r}
 interval_steps <- summarise(group_by(data, interval), average = mean(steps))
@@ -105,11 +107,12 @@ m <- ggplot(interval_steps, aes(x = interval, y = average))
 
 m + geom_line(colour = "blue", size = 0.75, stat="identity")+
         xlab("Interval")+ ylab("Average # of steps")+
-        ggtitle("Average daily # of steps per interval")   
+        ggtitle("Average daily # of steps per interval")+
+        theme(panel.background = element_rect(fill = 'white'))
 
 ```
 
-The interval with the highest value would be the interval `r interval_steps[which(interval_steps$average == max(interval_steps$average)),1]` according to the following function (we plotted below in red):
+The interval with the highest value would be the interval `r interval_steps[which(interval_steps$average == max(interval_steps$average)),1]` according to the following function:
 
 ```{r, results = "hide"}
 interval_steps[which(interval_steps$average == max(interval_steps$average)),1]
@@ -123,15 +126,15 @@ v <- as.numeric(v)
 m + geom_line(colour = "blue", size = 0.75, stat="identity")+
         xlab("Interval")+ ylab("Average # of steps")+
         ggtitle("Average daily # of steps per interval")+
-        geom_vline(xintercept = v, size = 0.75, colour = "red")
-
+        geom_vline(xintercept = v, size = 0.75, colour = "red")+
+        theme(panel.background = element_rect(fill = 'white'))
 ```
 
 
-## Imputing missing values
-From the analysis made for the first section, we saw that `r nrow(raw_data[is.na(raw_data$steps),])` observations in the raw data have a NA in the "steps"" variable which is the only variable with NA ocurrences. As per the exercise mandate, we need to decide on a strategy to overcome this so we don't end up with a biased dataset.
+## 4.- Imputing missing values
+From the analysis made for the first section, we saw that `r nrow(raw_data[is.na(raw_data$steps),])` observations in the raw data have a NA in the "steps" variable which is the only variable with NA ocurrences. As per the exercise explains, we have to decide on a strategy to overcome this so we don't end up with a biased dataset.
 
-In my case, I have decided to use the strategy of filling the gaps by using the average # of steps for an interval. Therefore, I'm going to create a different data set where I'm going to assign the average # of steps for an interval to those observations with a NA in the steps variable. This is pretty easy to make using the data that we generate for the previous section.
+In my case, I have decided to use the strategy of filling the gaps by using the average # of steps for an interval. Therefore, I'm going to create a different data set where I'm going to assign the average # of steps for an interval to those observations with a NA in the steps variable. This is pretty easy to make using the data that we generated in the previous section.
 
 ```{r}
 fill_data <- raw_data
@@ -158,7 +161,8 @@ m <- ggplot(total_steps_f, aes(x = date, y = total))
 
 m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
-        ggtitle("Total # of steps per day")
+        ggtitle("Total # of steps per day")+
+        theme(panel.background = element_rect(fill = 'white'))
 ```
 
 From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph like we did in section 2.
@@ -172,12 +176,14 @@ median(total_steps_f$total)
 p_mean <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
         ggtitle("Total # of steps per day")+
-        geom_hline(y = mean(total_steps_f$total), size = 0.75, colour = "red")
+        geom_hline(y = mean(total_steps_f$total), size = 0.75, colour = "red")+
+        theme(panel.background = element_rect(fill = 'white'))
 
 p_median <- m + geom_histogram(colour = "black", fill = "skyblue", stat="identity")+
         xlab("Date")+ ylab("Total # of steps")+
         ggtitle("Total # of steps per day")+
-        geom_hline(y = median(total_steps_f$total), size = 0.75, colour = "green")
+        geom_hline(y = median(total_steps_f$total), size = 0.75, colour = "green")+
+        theme(panel.background = element_rect(fill = 'white'))
 
 grid.arrange(p_mean, p_median, ncol = 2)
 ```        
@@ -185,7 +191,7 @@ grid.arrange(p_mean, p_median, ncol = 2)
 From this experiment we can conclude that, although we did not affect the mean at all, the median was impacted in a way that the number is much closer to the mean than before. In fact, with the input of the missing data we have made the mean and the median equal.
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+## 5.- Are there differences in activity patterns between weekdays and weekends?
 We need to create a new variable that indicates if the date is a "Weekday" or a "Weekend". Let's do it by using the `isWeekday()` function and attaching the result to the data set that we used before:
 
 ```{r}

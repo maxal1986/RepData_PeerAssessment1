@@ -1,6 +1,6 @@
 # Reproducible Research: Peer Assessment 1
 
-The data for this assignment (i.e. "activity.csv"" file) must be in the folder "RepData_PeerAssessment1".
+The original dataset for this assignment (i.e. "activity.zip"" file) must be in the folder "RepData_PeerAssessment1".
 
 The following libraries will be used during the process:
 
@@ -12,14 +12,12 @@ library(gridExtra) # For data visualization
 library(timeDate) # For manipulating dates
 ```
 
-## Loading and preprocessing the data
+## 1.- Loading and preprocessing the data
+Considering the original dataset, we should assign the following classes to each variable:
 
-
-Considering the dataset, we should assign the following classes to each variable:
-
-- **steps**: This will be a numerical class.
-- **date**: This will be a Date class.
-- **inteval**: This will be a numerical class.
+- **steps**: Numerical class.
+- **date**: Date class.
+- **inteval**: Numerical class.
 
 So, let's create a vector with the classes for each variable
 
@@ -28,23 +26,15 @@ So, let's create a vector with the classes for each variable
 data_types <- c("numeric", "Date", "numeric")
 ```
 
-Now, we are going to unzip the dataset and load it as raw data in our working space:
+Now, we are going to unzip the dataset and load it as a raw dataset in our working space:
 
 
 ```r
-data_file <- unzip("RepData_PeerAssessment1/activity.zip")
+data_file <- unzip("activity.zip")
+raw_data <- read.csv(data_file, colClasses = data_types)
 ```
 
-```
-## Warning in unzip("RepData_PeerAssessment1/activity.zip"): error 1 in
-## extracting from zip file
-```
-
-```r
-raw_data <- read.csv("activity.csv", colClasses = data_types)
-```
-
-Let's do some exploratory analysis. We can easily see that there are 17568 observations in the dataset. But, is the dataset complete? Let's see a summary:
+Let's begin by doing some exploratory analysis. We can easily see that there are 17568 observations in the dataset. But, is the dataset complete? Let's see a summary of the variables:
 
 
 ```
@@ -58,17 +48,17 @@ Let's do some exploratory analysis. We can easily see that there are 17568 obser
 ##  NA's   :2304
 ```
 
-From the summary, we derive that 2304 observations have a NA in the "steps" variable. Hence, we need to transform the raw data into a dataset with 15264 observations, so let's create the clean dataset.
+From this summary, we can derive that 2304 observations have a NA in the "steps" variable. Hence, we need to transform the raw dataset into a clean dataset with 15264 observations. Let's create this clean dataset.
 
 
 ```r
 data <- raw_data[!is.na(raw_data$steps),]
 ```
 
-Now the clean dataset has 15264 observations.
+Now the clean dataset has 15264 observations as we mentioned before.
 
-## What is mean total number of steps taken per day?
-We are going to group the dataset in order to report the total number of steps taken per day. Let's create a new variable:
+## 2.- What is mean total number of steps taken per day?
+We need to regroup the dataset in order to easily report the total number of steps taken per day. Let's create a new variable that will ease this process:
 
 
 ```r
@@ -79,7 +69,7 @@ Let's plot this variable:
 
 <img src="PA1_template_files/figure-html/unnamed-chunk-7-1.png" title="" alt="" style="display: block; margin: auto;" />
 
-From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph. Since the values are so close the lines overlap when plotting over the chart.
+From this summarised data we can obtain the mean (in red) and the median (in green) and plot it over the previous graph. Since the values are so close the lines overlap.
 
 
 ```r
@@ -100,8 +90,8 @@ median(total_steps$total)
 
 <img src="PA1_template_files/figure-html/unnamed-chunk-9-1.png" title="" alt="" style="display: block; margin: auto;" />
 
-## What is the average daily activity pattern?
-Similarly as we did for the previous section, we are going to group the dataset in order to report the average number of steps taken per interval. Let's create a new variable:
+## 3.- What is the average daily activity pattern?
+Similarly as we did for section 2, we need to regroup the dataset in order to report the average number of steps taken per interval. Let's create a new variable:
 
 
 ```r
@@ -112,7 +102,7 @@ Let's plot this variable:
 
 <img src="PA1_template_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" style="display: block; margin: auto;" />
 
-The interval with the highest value would be the interval 835 according to the following function (we plotted below in red):
+The interval with the highest value would be the interval 835 according to the following function:
 
 
 ```r
@@ -122,10 +112,10 @@ interval_steps[which(interval_steps$average == max(interval_steps$average)),1]
 <img src="PA1_template_files/figure-html/unnamed-chunk-13-1.png" title="" alt="" style="display: block; margin: auto;" />
 
 
-## Imputing missing values
-From the analysis made for the first section, we saw that 2304 observations in the raw data have a NA in the "steps"" variable which is the only variable with NA ocurrences. As per the exercise mandate, we need to decide on a strategy to overcome this so we don't end up with a biased dataset.
+## 4.- Imputing missing values
+From the analysis made for the first section, we saw that 2304 observations in the raw data have a NA in the "steps" variable which is the only variable with NA ocurrences. As per the exercise explains, we have to decide on a strategy to overcome this so we don't end up with a biased dataset.
 
-In my case, I have decided to use the strategy of filling the gaps by using the average # of steps for an interval. Therefore, I'm going to create a different data set where I'm going to assign the average # of steps for an interval to those observations with a NA in the steps variable. This is pretty easy to make using the data that we generate for the previous section.
+In my case, I have decided to use the strategy of filling the gaps by using the average # of steps for an interval. Therefore, I'm going to create a different data set where I'm going to assign the average # of steps for an interval to those observations with a NA in the steps variable. This is pretty easy to make using the data that we generated in the previous section.
 
 
 ```r
@@ -174,7 +164,7 @@ median(total_steps_f$total)
 From this experiment we can conclude that, although we did not affect the mean at all, the median was impacted in a way that the number is much closer to the mean than before. In fact, with the input of the missing data we have made the mean and the median equal.
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+## 5.- Are there differences in activity patterns between weekdays and weekends?
 We need to create a new variable that indicates if the date is a "Weekday" or a "Weekend". Let's do it by using the `isWeekday()` function and attaching the result to the data set that we used before:
 
 
